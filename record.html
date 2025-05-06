@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Record Viewer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Record Details</h1>
+    <div id="recordDetails">Loading...</div>
+  </main>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const sheet = params.get('sheet');
+    const qr_id = params.get('qr_id');
+
+    fetch(`https://script.google.com/macros/s/AKfycbx54pvZqYzpAtvrFmfGIGCLssuOahG8WFFN88WDmfITyvc6KZBNc7wBKz3yAuQZYNrb/exec?sheet=${sheet}&qr_id=${qr_id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data || Object.keys(data).length === 0) return document.getElementById('recordDetails').innerText = 'No record found.';
+
+        const html = Object.entries(data).map(([key, value]) => `<p><strong>${key}</strong>: ${value}</p>`).join('');
+        document.getElementById('recordDetails').innerHTML = html;
+      });
+  </script>
+</body>
+</html>
