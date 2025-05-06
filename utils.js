@@ -17,3 +17,8 @@ function generateQR(url, el) {
   const qr = new QRious({ element: el, value: url, size: 200, foreground: 'black', background: 'white' });
   return qr.toDataURL();
 }
+
+function setDefaultDatetime(id) {
+  const now = new Date();
+  document.getElementById(id).value = now.toISOString().slice(0,16);
+}
