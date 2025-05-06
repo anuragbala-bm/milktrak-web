@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html>
 <head>
   <title>Reagent Tracking</title>
@@ -32,11 +31,14 @@
         <option>IIT-M</option>
       </select>
 
+      <label>Prepared Datetime</label>
+      <input type="datetime-local" id="reagent_prepared_datetime" required />
+
       <label>Notes</label>
       <textarea id="reagent_notes"></textarea>
 
       <label>Image Upload</label>
-      <input type="file" id="reagent_image" accept="image/*" capture="environment" required />
+      <input type="file" id="reagent_image" accept="image/*" required />
 
       <canvas id="qrCanvas" style="display:none;"></canvas>
       <img class="qr-preview" id="qrPreview" />
@@ -44,23 +46,32 @@
       <button type="submit">Generate QR & Submit</button>
     </form>
   </main>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <script src="utils.js"></script>
   <script>
     const form = document.getElementById('reagentForm');
     const endpoint = 'https://script.google.com/macros/s/AKfycbx54pvZqYzpAtvrFmfGIGCLssuOahG8WFFN88WDmfITyvc6KZBNc7wBKz3yAuQZYNrb/exec';
 
+    let batchId;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setDefaultDatetime('reagent_prepared_datetime');
+      const param = document.getElementById('reagent_parameter');
+      param.addEventListener('change', () => {
+        batchId = generateId('RGT', param.value.slice(0, 3).toUpperCase());
+        const qrUrl = `https://anuragbala-bm.github.io/milktrak-web/record.html?sheet=reagent_tracking&qr_id=${batchId}`;
+        const canvas = document.getElementById('qrCanvas');
+        const qrImage = generateQR(qrUrl, canvas);
+        document.getElementById('qrPreview').src = qrImage;
+      });
+    });
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const param = document.getElementById('reagent_parameter').value;
-      const batchId = generateId('RGT', param.slice(0,3).toUpperCase());
-      const qrUrl = `https://anuragbala-bm.github.io/milktrak-web/record.html?sheet=reagent_tracking&qr_id=${batchId}`;
-
-      // QR Code
       const canvas = document.getElementById('qrCanvas');
-      const qrImage = generateQR(qrUrl, canvas);
-      document.getElementById('qrPreview').src = qrImage;
-
+      const qrImage = generateQR(canvas.toDataURL(), canvas);
       const fileInput = document.getElementById('reagent_image');
       const fileName = `${batchId}.jpg`;
       const imgPath = `images/${fileName}`;
@@ -75,7 +86,7 @@
         reagent_parameter: param,
         reagent_quantity: document.getElementById('reagent_quantity').value,
         reagent_batch_number: batchId,
-        reagent_prepared_datetime: new Date().toISOString(),
+        reagent_prepared_datetime: document.getElementById('reagent_prepared_datetime').value,
         reagent_prepared_at: document.getElementById('reagent_prepared_at').value,
         reagent_notes: document.getElementById('reagent_notes').value
       };
