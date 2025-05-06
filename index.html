@@ -1,0 +1,202 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MilkTrak - Select Form</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="container">
+    <h1>MilkTrak - Tracking System</h1>
+    <ul class="form-links">
+      <li><a href="reagent_tracking.html">➤ Reagent Tracking</a></li>
+      <!-- Add others later -->
+    </ul>
+  </main>
+</body>
+</html>
+
+<!-- styles.css -->
+body {
+  font-family: Arial, sans-serif;
+  padding: 1rem;
+  background: #f4f4f4;
+}
+.container {
+  max-width: 600px;
+  margin: auto;
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+h1 {
+  font-size: 1.5rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+label {
+  display: block;
+  margin: 0.5rem 0 0.25rem;
+}
+input, select, textarea {
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+}
+button {
+  padding: 0.75rem;
+  background: #1a73e8;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+img.qr-preview {
+  width: 200px;
+  margin-top: 1rem;
+}
+
+<!-- utils.js -->
+async function submitForm(endpoint, data) {
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    body: JSON.stringify(data),
+    headers: { 'Content-Type': 'application/json' }
+  });
+  return await res.json();
+}
+
+function generateId(prefix, paramId) {
+  const date = new Date().toISOString().slice(0,10).replace(/-/g, '').slice(2);
+  const rand = Math.floor(100 + Math.random() * 900);
+  return `${prefix}-${paramId}-${date}-${rand}`;
+}
+
+function generateQR(url, el) {
+  const qr = new QRious({ element: el, value: url, size: 200, foreground: 'black', background: 'white' });
+  return qr.toDataURL();
+}
+
+<!-- reagent_tracking.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reagent Tracking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Reagent Tracking Form</h1>
+    <form id="reagentForm">
+      <label>Parameter</label>
+      <select id="reagent_parameter" required>
+        <option value="">-- select --</option>
+        <option value="Soap">Soap</option>
+        <option value="Salt">Salt</option>
+        <option value="Neutralizer">Neutralizer</option>
+        <option value="Detergent">Detergent</option>
+        <option value="Nitrates">Nitrates</option>
+        <option value="Sucrose">Sucrose</option>
+        <option value="Maltodextrin">Maltodextrin</option>
+        <option value="Glucose">Glucose</option>
+        <option value="Urea">Urea</option>
+      </select>
+
+      <label>Quantity</label>
+      <input type="text" id="reagent_quantity" required />
+
+      <label>Prepared At</label>
+      <select id="reagent_prepared_at">
+        <option>TICEL</option>
+        <option>IIT-M</option>
+      </select>
+
+      <label>Notes</label>
+      <textarea id="reagent_notes"></textarea>
+
+      <label>Image Upload</label>
+      <input type="file" id="reagent_image" accept="image/*" capture="environment" required />
+
+      <canvas id="qrCanvas" style="display:none;"></canvas>
+      <img class="qr-preview" id="qrPreview" />
+
+      <button type="submit">Generate QR & Submit</button>
+    </form>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <script src="utils.js"></script>
+  <script>
+    const form = document.getElementById('reagentForm');
+    const endpoint = 'https://script.google.com/macros/s/AKfycbx54pvZqYzpAtvrFmfGIGCLssuOahG8WFFN88WDmfITyvc6KZBNc7wBKz3yAuQZYNrb/exec';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const param = document.getElementById('reagent_parameter').value;
+      const batchId = generateId('RGT', param.slice(0,3).toUpperCase());
+      const qrUrl = `https://anuragbala-bm.github.io/milktrak-web/record.html?sheet=reagent_tracking&qr_id=${batchId}`;
+
+      // QR Code
+      const canvas = document.getElementById('qrCanvas');
+      const qrImage = generateQR(qrUrl, canvas);
+      document.getElementById('qrPreview').src = qrImage;
+
+      const fileInput = document.getElementById('reagent_image');
+      const fileName = `${batchId}.jpg`;
+      const imgPath = `images/${fileName}`;
+      const qrPath = `qrcodes/${batchId}.png`;
+
+      const payload = {
+        sheet: 'reagent_tracking',
+        reagent_id: batchId,
+        reagent_qr_id: batchId,
+        reagent_qr_location: qrPath,
+        reagent_image: imgPath,
+        reagent_parameter: param,
+        reagent_quantity: document.getElementById('reagent_quantity').value,
+        reagent_batch_number: batchId,
+        reagent_prepared_datetime: new Date().toISOString(),
+        reagent_prepared_at: document.getElementById('reagent_prepared_at').value,
+        reagent_notes: document.getElementById('reagent_notes').value
+      };
+
+      const result = await submitForm(endpoint, payload);
+      if (result.status === 'success') alert('Submitted! Upload image & QR manually to GitHub.');
+      else alert('Submission failed.');
+    });
+  </script>
+</body>
+</html>
+
+<!-- record.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Record Viewer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Record Details</h1>
+    <div id="recordDetails">Loading...</div>
+  </main>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const sheet = params.get('sheet');
+    const qr_id = params.get('qr_id');
+
+    fetch(`https://script.google.com/macros/s/AKfycbx54pvZqYzpAtvrFmfGIGCLssuOahG8WFFN88WDmfITyvc6KZBNc7wBKz3yAuQZYNrb/exec?sheet=${sheet}&qr_id=${qr_id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data || Object.keys(data).length === 0) return document.getElementById('recordDetails').innerText = 'No record found.';
+
+        const html = Object.entries(data).map(([key, value]) => `<p><strong>${key}</strong>: ${value}</p>`).join('');
+        document.getElementById('recordDetails').innerHTML = html;
+      });
+  </script>
+</body>
+</html>
